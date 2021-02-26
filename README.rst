@@ -1,7 +1,7 @@
 py-gzip-header
 ==============
 
-Python library to edit gzip file header.
+Python library to parse and edit gzip file header.
 
 Library
 -------

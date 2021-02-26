@@ -1,5 +1,5 @@
 """
-Gzip file header edit
+Gzip file header parser
 """
 
 __version__ = '0.1.0'
