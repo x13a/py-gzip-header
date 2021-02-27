@@ -31,14 +31,22 @@ SIZE_LEN = 2
 CHECKSUM_LEN = 2
 
 
-@dataclass
+@dataclass(init=False)
 class Field:
-    magic: bytes
+    ids: bytes
     data: bytes
 
+    def __init__(self, ids: bytes, data: bytes):
+        if len(ids) != MAGIC_LEN:
+            raise gzip.BadGzipFile(
+                f'fextra ids len should be {MAGIC_LEN} bytes')
+        self.ids = ids
+        self.data = data
+
     def __bytes__(self) -> bytes:
+        assert len(self.ids) == MAGIC_LEN
         return (
-            self.magic +
+            self.ids +
             len(self.data).to_bytes(SIZE_LEN, BYTE_ORDER) +
             self.data
         )
@@ -115,20 +123,20 @@ class Header:
         fields = []
         size = MAGIC_LEN + SIZE_LEN
         while xlen > 0:
-            magic, field_len = struct.unpack(
+            ids, data_len = struct.unpack(
                 f'<{MAGIC_LEN}sH',
                 reader.read(size),
             )
             fields.append(Field(
-                magic=magic,
-                data=reader.read(field_len)
+                ids=ids,
+                data=reader.read(data_len)
             ))
-            xlen -= field_len + size
+            xlen -= data_len + size
         return fields
 
     @staticmethod
     def _calc_checksum(data: bytes) -> bytes:
-        return zlib.crc32(data).to_bytes(4, BYTE_ORDER)[CHECKSUM_LEN:]
+        return zlib.crc32(data).to_bytes(4, BYTE_ORDER)[4-CHECKSUM_LEN:]
 
     def set_checksum_flag(self, value: bool):
         self._set_flg(gzip.FHCRC, value)
